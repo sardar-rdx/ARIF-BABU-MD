@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#080b11" />
+<link rel="icon" href="data:," />
+<title>RDX BOT — Secure Pairing Console</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --void: #080b11;
+    --panel: #10151d;
+    --panel-raised: #151d25;
+    --line: rgba(146, 183, 194, .18);
+    --text: #edf5f3;
+    --muted: #91a3a6;
+    --dim: #617378;
+    --lime: #c7ff54;
+    --cyan: #5ce7dc;
+    --pink: #ff568f;
+    --amber: #ffd36a;
+    --font-ui: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+    --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { min-height: 100%; background: var(--void); }
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    min-height: 100svh;
+    margin: 0;
+    padding: clamp(14px, 3vw, 36px);
+    display: grid;
+    place-items: center;
+    overflow-x: hidden;
+    color: var(--text);
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(30, 84, 81, .23), transparent 42rem),
+      radial-gradient(ellipse at 93% 79%, rgba(115, 31, 77, .14), transparent 35rem),
+      linear-gradient(145deg, #0b1117, #080b11 60%, #0d1118);
+    font-family: var(--font-ui);
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: .14;
+    background-image: linear-gradient(rgba(128, 177, 180, .09) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(128, 177, 180, .09) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: linear-gradient(to bottom, #000, transparent 78%);
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    opacity: .13;
+    background: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(255,255,255,.055) 4px);
+  }
+  button, input { font: inherit; }
+
+  .console {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 1040px);
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) minmax(360px, .98fr);
+    overflow: hidden;
+    border: 1px solid rgba(139, 190, 194, .23);
+    border-radius: 24px;
+    background: rgba(12, 17, 23, .93);
+    box-shadow: 0 32px 100px rgba(0,0,0,.56), 0 0 60px rgba(52, 232, 214, .055);
+    animation: console-arrive .8s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .console::before {
+    content: "";
+    position: absolute;
+    z-index: 5;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: linear-gradient(115deg, rgba(92,231,220,.15), transparent 22%, transparent 76%, rgba(199,255,84,.11));
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    padding: 1px;
+  }
+
+  .visual {
+    position: relative;
+    display: flex;
+    min-height: 690px;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: clamp(27px, 4vw, 48px);
+    overflow: hidden;
+    isolation: isolate;
+    border-right: 1px solid var(--line);
+    background:
+      radial-gradient(ellipse at 52% 45%, rgba(24, 105, 102, .2), transparent 50%),
+      linear-gradient(160deg, rgba(19, 33, 37, .82), rgba(12, 17, 23, .3) 58%, rgba(31, 14, 27, .36));
+  }
+  .visual::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    width: 440px;
+    height: 440px;
+    top: 50%;
+    left: 50%;
+    border: 1px solid rgba(92,231,220,.1);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 38px rgba(92,231,220,.018), 0 0 0 88px rgba(92,231,220,.015);
+  }
+  .eyebrow, .micro-label {
+    color: var(--cyan);
+    font: 600 10px/1.4 var(--font-mono);
+    letter-spacing: .2em;
+    text-transform: uppercase;
+  }
+  .brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  }
+  .brand-mark {
+    display: grid;
+    width: 39px;
+    height: 39px;
+    place-items: center;
+    border: 1px solid rgba(199,255,84,.65);
+    color: var(--lime);
+    background: rgba(199,255,84,.06);
+    box-shadow: inset 0 0 16px rgba(199,255,84,.08), 0 0 22px rgba(199,255,84,.08);
+    clip-path: polygon(0 0, 100% 0, 100% 72%, 72% 100%, 0 100%);
+  }
+  .brand-mark svg { width: 22px; height: 22px; }
+  .brand-name {
+    color: #f3faf5;
+    font-size: 14px;
+    font-weight: 750;
+    letter-spacing: .15em;
+  }
+  .brand-sub {
+    display: block;
+    margin-top: 3px;
+    color: var(--dim);
+    font: 9px var(--font-mono);
+    letter-spacing: .14em;
+  }
+
+  .hero-copy { position: relative; z-index: 1; margin-top: 33px; }
+  .hero-copy h1 {
+    max-width: 440px;
+    margin: 13px 0 13px;
+    color: var(--text);
+    font-size: clamp(35px, 4.5vw, 55px);
+    font-weight: 650;
+    line-height: .99;
+    letter-spacing: -.055em;
+  }
+  .hero-copy h1 span {
+    color: var(--lime);
+    text-shadow: 0 0 28px rgba(199,255,84,.25);
+  }
+  .hero-copy p {
+    max-width: 370px;
+    color: #a2b1b2;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .holo-stage {
+    position: relative;
+    display: grid;
+    min-height: 260px;
+    flex: 1;
+    place-items: center;
+    perspective: 900px;
+    margin: 8px -10px 0;
+  }
+  .orbit {
+    position: absolute;
+    width: min(76%, 300px);
+    aspect-ratio: 1;
+    border: 1px solid rgba(92,231,220,.27);
+    border-radius: 50%;
+    transform: rotateX(67deg) rotateZ(-22deg);
+    box-shadow: 0 0 24px rgba(92,231,220,.09), inset 0 0 24px rgba(92,231,220,.05);
+    animation: orbit-breathe 5s ease-in-out infinite;
+  }
+  .orbit::before, .orbit::after {
+    content: "";
+    position: absolute;
+    inset: 13%;
+    border: 1px dashed rgba(199,255,84,.27);
+    border-radius: inherit;
+  }
+  .orbit::after {
+    inset: -16%;
+    border-color: rgba(255,86,143,.14);
+    transform: rotate(48deg) scaleY(.73);
+  }
+  .orbit-secondary {
+    width: min(57%, 220px);
+    border-color: rgba(255,86,143,.22);
+    transform: rotateX(68deg) rotateZ(48deg);
+    animation-delay: -2.5s;
+  }
+  .signal-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    top: 15%;
+    left: 68%;
+    border-radius: 50%;
+    background: var(--lime);
+    box-shadow: 0 0 7px var(--lime), 0 0 20px var(--lime);
+    animation: dot-drift 5s ease-in-out infinite;
+  }
+  .signal-dot.pink {
+    width: 6px;
+    height: 6px;
+    top: 71%;
+    left: 21%;
+    background: var(--pink);
+    box-shadow: 0 0 7px var(--pink), 0 0 20px var(--pink);
+    animation-delay: -2s;
+  }
+  .core {
+    position: relative;
+    display: grid;
+    width: clamp(118px, 15vw, 166px);
+    aspect-ratio: 1;
+    place-items: center;
+    transform-style: preserve-3d;
+    animation: core-float 5s ease-in-out infinite;
+  }
+  .core::before, .core::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(92,231,220,.62);
+    border-radius: 29% 71% 66% 34% / 43% 35% 65% 57%;
+    background: linear-gradient(145deg, rgba(92,231,220,.16), rgba(199,255,84,.025) 54%, rgba(255,86,143,.1));
+    box-shadow: inset 0 0 30px rgba(92,231,220,.11), 0 0 35px rgba(92,231,220,.14);
+    transform: rotate(28deg) translateZ(15px);
+  }
+  .core::after {
+    inset: 11%;
+    border-color: rgba(199,255,84,.5);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(199,255,84,.1), transparent 68%);
+    transform: rotate(-28deg) translateZ(28px);
+  }
+  .core svg {
+    position: relative;
+    z-index: 1;
+    width: 61px;
+    height: 61px;
+    color: var(--lime);
+    filter: drop-shadow(0 0 13px rgba(199,255,84,.45));
+    transform: translateZ(42px);
+  }
+  .holo-caption {
+    position: absolute;
+    bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #809396;
+    font: 9px var(--font-mono);
+    letter-spacing: .15em;
+    text-transform: uppercase;
+  }
+  .holo-caption::before {
+    content: "";
+    width: 18px;
+    height: 1px;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+  }
+  .visual-footer {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+  }
+  .visual-footer p {
+    max-width: 215px;
+    color: #819194;
+    font: 10px/1.6 var(--font-mono);
+    letter-spacing: .03em;
+  }
+  .secure-stamp {
+    flex: none;
+    color: var(--lime);
+    font: 9px/1.6 var(--font-mono);
+    letter-spacing: .1em;
+    text-align: right;
+    text-transform: uppercase;
+  }
+
+  .workspace {
+    padding: clamp(25px, 4vw, 43px);
+    align-self: stretch;
+    background: linear-gradient(155deg, rgba(20,27,35,.94), rgba(13,18,25,.97));
+  }
+  .workspace-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 26px;
+  }
+  .workspace-head h2 {
+    margin-top: 6px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -.035em;
+  }
+  .session-index {
+    color: var(--dim);
+    font: 9px/1.7 var(--font-mono);
+    letter-spacing: .12em;
+    text-align: right;
+  }
+  .status-line { margin: 0 0 23px; }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    padding: 8px 11px;
+    border: 1px solid rgba(255,211,106,.3);
+    border-radius: 6px;
+    background: rgba(255,211,106,.07);
+    color: var(--amber);
+    font: 10px/1.4 var(--font-mono);
+    letter-spacing: .025em;
+  }
+  .status-badge::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    flex: none;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 9px currentColor;
+    animation: status-pulse 1.8s ease-in-out infinite;
+  }
+  .status-badge.connected {
+    color: var(--lime);
+    border-color: rgba(199,255,84,.38);
+    background: rgba(199,255,84,.07);
+  }
+  .field { margin-bottom: 17px; }
+  .field-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: #d4dfdd;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .035em;
+  }
+  .field-hint {
+    color: #819194;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .number-row { display: grid; grid-template-columns: 82px minmax(0,1fr); gap: 9px; }
+  input {
+    width: 100%;
+    min-width: 0;
+    height: 47px;
+    border: 1px solid rgba(143,169,173,.25);
+    border-radius: 7px;
+    outline: none;
+    background: rgba(5,10,14,.57);
+    color: var(--text);
+    font-size: 14px;
+    transition: border-color .2s, background .2s, box-shadow .2s;
+  }
+  input::placeholder { color: #617276; opacity: 1; }
+  input:focus-visible {
+    border-color: var(--cyan);
+    background: rgba(7,16,20,.9);
+    box-shadow: 0 0 0 3px rgba(92,231,220,.13), 0 0 18px rgba(92,231,220,.08);
+  }
+  .cc { padding: 0 10px; text-align: center; font-family: var(--font-mono); }
+  input[type="tel"] { padding: 0 13px; }
+  #prefix {
+    padding: 0 13px;
+    font-family: var(--font-mono);
+    letter-spacing: .08em;
+  }
+  .field-note {
+    margin-top: 7px;
+    color: #819194;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+  .owner-label { align-items: flex-start; }
+  .owner-label .field-hint { max-width: 205px; text-align: right; line-height: 1.45; }
+  #genBtn {
+    position: relative;
+    display: flex;
+    width: 100%;
+    min-height: 51px;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    margin-top: 24px;
+    padding: 13px 18px;
+    overflow: hidden;
+    border: 1px solid rgba(220,255,117,.86);
+    border-radius: 7px;
+    background: linear-gradient(100deg, #c9ff57, #a9ef4c);
+    box-shadow: 0 0 25px rgba(199,255,84,.17), inset 0 1px 0 rgba(255,255,255,.45);
+    color: #102016;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .035em;
+    cursor: pointer;
+    transition: transform .18s, box-shadow .2s, filter .2s;
+  }
+  #genBtn::after {
+    content: "";
+    position: absolute;
+    top: -60%;
+    left: -30%;
+    width: 18%;
+    height: 220%;
+    background: rgba(255,255,255,.34);
+    transform: rotate(22deg);
+    transition: left .5s;
+  }
+  #genBtn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 0 34px rgba(199,255,84,.29), 0 8px 22px rgba(0,0,0,.22);
+  }
+  #genBtn:hover:not(:disabled)::after { left: 120%; }
+  #genBtn:active:not(:disabled) { transform: translateY(0); }
+  #genBtn:disabled { opacity: .56; cursor: not-allowed; filter: saturate(.72); }
+  #genBtn:focus-visible, .code-value:focus-visible {
+    outline: 3px solid var(--cyan);
+    outline-offset: 4px;
+  }
+  .button-crosshair { width: 15px; height: 15px; flex: none; }
+  .spinner {
+    display: none;
+    width: 23px;
+    height: 23px;
+    margin: 18px auto 0;
+    border: 2px solid rgba(92,231,220,.18);
+    border-top-color: var(--cyan);
+    border-right-color: var(--lime);
+    border-radius: 50%;
+    filter: drop-shadow(0 0 5px rgba(92,231,220,.3));
+    animation: spin .75s linear infinite;
+  }
+  .spinner.show { display: block; }
+  .msg {
+    display: none;
+    margin-top: 14px;
+    padding: 11px 13px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.55;
+    text-align: left;
+  }
+  .msg.error {
+    display: block;
+    border: 1px solid rgba(255,86,143,.36);
+    background: rgba(255,86,143,.09);
+    color: #ff9ab9;
+  }
+  .msg.success {
+    display: block;
+    border: 1px solid rgba(199,255,84,.32);
+    background: rgba(199,255,84,.07);
+    color: #d9ffa0;
+  }
+  .code-box {
+    display: none;
+    margin-top: 21px;
+    padding: 16px;
+    border: 1px solid rgba(92,231,220,.24);
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(92,231,220,.06), rgba(199,255,84,.035));
+    animation: reveal .35s ease both;
+  }
+  .code-box.show { display: block; }
+  .code-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 11px;
+  }
+  .code-label {
+    color: #9db0b0;
+    font: 9px var(--font-mono);
+    letter-spacing: .13em;
+    text-transform: uppercase;
+  }
+  .copy-hint { color: var(--cyan); font-size: 10px; }
+  .code-value {
+    display: block;
+    width: 100%;
+    padding: 14px 10px;
+    border: 1px dashed rgba(199,255,84,.55);
+    border-radius: 6px;
+    background: rgba(199,255,84,.055);
+    color: var(--lime);
+    font: 700 clamp(22px, 5vw, 30px)/1.2 var(--font-mono);
+    letter-spacing: .2em;
+    text-align: center;
+    text-shadow: 0 0 17px rgba(199,255,84,.22);
+    cursor: copy;
+    transition: background .2s, border-color .2s;
+  }
+  .code-value:hover { border-color: var(--lime); background: rgba(199,255,84,.1); }
+  .steps {
+    display: none;
+    margin-top: 15px;
+    padding: 13px 15px;
+    border-left: 2px solid rgba(92,231,220,.65);
+    background: rgba(92,231,220,.035);
+    color: #a7b6b5;
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  .steps b { color: #e1ebdf; font-weight: 650; }
+  .steps ol { margin: 6px 0 0 17px; padding: 0; }
+  .steps li { padding-left: 3px; }
+
+  .control-panel {
+    margin-top: 20px;
+    padding: 15px 16px 13px;
+    border: 1px solid rgba(146, 183, 194, .18);
+    border-radius: 8px;
+    background: linear-gradient(155deg, rgba(20, 27, 35, .8), rgba(13, 18, 25, .9));
+  }
+  .control-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .control-state {
+    color: var(--muted);
+    font: 9px var(--font-mono);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .control-state.running { color: var(--lime); }
+  .control-state.stopped { color: var(--pink); }
+  .control-state.busy { color: var(--amber); }
+  .control-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: 8px;
+  }
+  .ctrl-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 40px;
+    padding: 9px 10px;
+    border: 1px solid rgba(143, 169, 173, .28);
+    border-radius: 6px;
+    background: rgba(5, 10, 14, .55);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    cursor: pointer;
+    transition: border-color .18s, background .18s, transform .15s, box-shadow .18s;
+  }
+  .ctrl-btn:hover:not(:disabled) { transform: translateY(-1px); }
+  .ctrl-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .ctrl-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .ctrl-ico { font-size: 12px; line-height: 1; opacity: .9; }
+  .ctrl-btn.start { border-color: rgba(199, 255, 84, .45); color: var(--lime); }
+  .ctrl-btn.start:hover:not(:disabled) { background: rgba(199, 255, 84, .1); box-shadow: 0 0 14px rgba(199, 255, 84, .12); }
+  .ctrl-btn.stop { border-color: rgba(255, 86, 143, .4); color: var(--pink); }
+  .ctrl-btn.stop:hover:not(:disabled) { background: rgba(255, 86, 143, .1); }
+  .ctrl-btn.connect { border-color: rgba(92, 231, 220, .42); color: var(--cyan); }
+  .ctrl-btn.connect:hover:not(:disabled) { background: rgba(92, 231, 220, .1); }
+  .ctrl-btn.logout { border-color: rgba(255, 211, 106, .38); color: var(--amber); }
+  .ctrl-btn.logout:hover:not(:disabled) { background: rgba(255, 211, 106, .1); }
+  .ctrl-btn.newbot { border-color: rgba(199, 255, 84, .55); color: var(--lime); background: rgba(199, 255, 84, .06); }
+  .ctrl-btn.newbot:hover:not(:disabled) { background: rgba(199, 255, 84, .12); box-shadow: 0 0 16px rgba(199, 255, 84, .14); }
+  .control-note {
+    margin: 11px 0 0;
+    color: #75878b;
+    font-size: 10px;
+    line-height: 1.55;
+  }
+
+  .workspace-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 15px;
+    border-top: 1px solid var(--line);
+    color: #75878b;
+    font: 9px var(--font-mono);
+    letter-spacing: .06em;
+  }
+  .footer-ready { display: inline-flex; align-items: center; gap: 7px; }
+  .footer-ready::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes console-arrive {
+    from { opacity: 0; transform: translateY(12px) scale(.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes core-float {
+    0%, 100% { transform: translateY(0) rotateY(-8deg) rotateX(5deg); }
+    50% { transform: translateY(-10px) rotateY(8deg) rotateX(-4deg); }
+  }
+  @keyframes orbit-breathe {
+    0%, 100% { opacity: .72; }
+    50% { opacity: 1; }
+  }
+  @keyframes dot-drift {
+    0%, 100% { transform: translate3d(0,0,0); }
+    50% { transform: translate3d(-6px,9px,0); }
+  }
+  @keyframes status-pulse {
+    0%, 100% { opacity: .55; }
+    50% { opacity: 1; }
+  }
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 760px) {
+    body { display: block; padding: 14px; }
+    .console {
+      width: min(100%, 510px);
+      margin: 0 auto;
+      grid-template-columns: minmax(0,1fr);
+      border-radius: 18px;
+    }
+    .visual {
+      min-height: 0;
+      padding: 23px 23px 15px;
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-copy { margin-top: 25px; }
+    .hero-copy h1 { max-width: 430px; margin-top: 10px; font-size: clamp(39px, 10vw, 53px); }
+    .hero-copy p { max-width: 350px; font-size: 13px; }
+    .holo-stage { min-height: clamp(175px, 48vw, 235px); margin: 1px -7px 0; }
+    .visual::before { width: 340px; height: 340px; }
+    .visual-footer { padding-top: 12px; }
+    .workspace { padding: 24px clamp(21px, 6vw, 32px) 21px; }
+    .workspace-head { margin-bottom: 20px; }
+    .status-line { margin-bottom: 19px; }
+  }
+  @media (max-width: 380px) {
+    body { padding: 9px; }
+    .visual { padding: 19px 17px 13px; }
+    .workspace { padding: 20px 17px 18px; }
+    .hero-copy h1 { font-size: 37px; }
+    .number-row { grid-template-columns: 70px minmax(0,1fr); gap: 7px; }
+    .field-label { font-size: 10px; }
+    .owner-label .field-hint { max-width: 160px; font-size: 9px; }
+    .workspace-footer { font-size: 8px; }
+  }
+  @media (max-width: 760px) and (max-height: 900px) {
+    body { padding: 10px; }
+    .visual { padding: 18px 20px 10px; }
+    .hero-copy { margin-top: 15px; }
+    .holo-stage { min-height: clamp(100px, 26vw, 125px); }
+    .visual-footer { display: none; }
+    .workspace { padding-top: 18px; padding-bottom: 10px; }
+    .workspace-head { margin-bottom: 11px; }
+    .status-line { margin-bottom: 10px; }
+    .field { margin-bottom: 9px; }
+    #genBtn { min-height: 46px; margin-top: 10px; }
+    .workspace-footer { margin-top: 12px; padding-top: 9px; }
+  }
+  @media (max-width: 380px) and (max-height: 700px) {
+    .visual { padding: 12px 16px 6px; }
+    .brand-sub { display: none; }
+    .hero-copy { margin-top: 6px; }
+    .hero-copy p { display: none; }
+    .hero-copy h1 { margin: 6px 0 0; font-size: 32px; }
+    .holo-stage { min-height: 54px; margin: 0 -7px; }
+    .core { width: 72px; }
+    .holo-caption { display: none; }
+    .workspace { padding-top: 14px; padding-bottom: 12px; }
+    .workspace-head { margin-bottom: 8px; }
+    .status-line { margin-bottom: 8px; }
+    .field { margin-bottom: 7px; }
+    .field-hint, .field-note { display: none; }
+    input { height: 39px; }
+    #genBtn { min-height: 44px; margin-top: 10px; }
+    .workspace-footer { margin-top: 10px; padding-top: 9px; }
+  }
+  @media (max-height: 760px) and (min-width: 761px) {
+    body { align-items: start; }
+    .visual { min-height: 620px; }
+  }
+  @media (orientation: landscape) and (max-height: 560px) {
+    body { display: block; padding: 12px; }
+    .console { margin: 0 auto; }
+    .visual { min-height: 580px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      scroll-behavior: auto !important;
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+<main class="console" aria-label="RDX BOT WhatsApp pairing console">
+  <section class="visual" aria-labelledby="pageTitle">
+    <div class="brand-lockup">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 19V5h4.1l3.9 6 3.9-6H20v14h-4V11l-4 5.7L8 11v8H4Z" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <div>
+        <div class="brand-name">ARIF / RDX</div>
+        <span class="brand-sub">COMMUNICATIONS SYSTEMS</span>
+      </div>
+    </div>
+
+    <div class="hero-copy">
+      <div class="eyebrow">Owner control point <span aria-hidden="true">/</span> 01</div>
+      <h1 id="pageTitle">Bring your<br /><span>bot online.</span></h1>
+      <p>Pair your account with a code. Finish in WhatsApp's Linked Devices settings.</p>
+    </div>
+
+    <div class="holo-stage" aria-hidden="true">
+      <div class="orbit"><i class="signal-dot"></i></div>
+      <div class="orbit orbit-secondary"><i class="signal-dot pink"></i></div>
+      <div class="core">
+        <svg viewBox="0 0 64 64" fill="none">
+          <path d="M32 7.5 51 18.4v21.8L32 51.1 13 40.2V18.4L32 7.5Z" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m22.5 24.5 9.5 5.7 9.5-5.7M32 30.2v11.2m-9.5-16.9v11.1l9.5 5.6 9.5-5.6V24.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="32" cy="20" r="2.3" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="holo-caption">WhatsApp link protocol</div>
+    </div>
+
+    <div class="visual-footer">
+      <p>ONE DEVICE. ONE CODE.<br />A direct link between your account and your bot.</p>
+      <div class="secure-stamp">Pairing<br />console</div>
+    </div>
+  </section>
+
+  <section class="workspace" aria-labelledby="setupHeading">
+    <header class="workspace-head">
+      <div>
+        <div class="micro-label">Pairing sequence</div>
+        <h2 id="setupHeading">Configure your link</h2>
+      </div>
+      <div class="session-index">RDX / AUTH<br />SESSION 01</div>
+    </header>
+
+    <div class="status-line">
+      <span class="status-badge" id="statusBadge" role="status" aria-live="polite">Checking connection status</span>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="number">WhatsApp number <span class="field-hint">Digits only</span></label>
+      <div class="number-row">
+        <label class="sr-only" for="cc">Country calling code</label>
+        <input class="cc" id="cc" type="text" value="" maxlength="4" placeholder="Code" inputmode="numeric" autocomplete="tel-country-code" aria-label="Country calling code" />
+        <input type="tel" id="number" placeholder="Mobile number" maxlength="15" inputmode="numeric" autocomplete="tel-national" aria-label="WhatsApp phone number" />
+      </div>
+      <p class="field-note">Enter your country calling code and WhatsApp number.</p>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="prefix">Bot prefix <span class="field-hint">1–3 characters</span></label>
+      <input type="text" id="prefix" value="." maxlength="3" placeholder="e.g. . or !" autocomplete="off" />
+    </div>
+
+    <div class="field">
+      <label class="field-label owner-label" for="ownerNumber">
+        <span>Owner number</span>
+        <span class="field-hint">Optional — defaults to pairing number</span>
+      </label>
+      <input type="tel" id="ownerNumber" placeholder="Country code + number" maxlength="15" inputmode="numeric" autocomplete="tel" />
+    </div>
+
+    <button id="genBtn" type="button" onclick="getCode()">
+      <svg class="button-crosshair" aria-hidden="true" viewBox="0 0 18 18" fill="none">
+        <path d="M9 1.5v4m0 7v4m7.5-7.5h-4m-7 0h-4M13.7 4.3l-2.8 2.8m-3.8 3.8-2.8 2.8m9.4 0-2.8-2.8m-3.8-3.8L4.3 4.3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+        <circle cx="9" cy="9" r="2.2" stroke="currentColor" stroke-width="1.25"/>
+      </svg>
+      Generate Pair Code
+    </button>
+
+    <div class="spinner" id="spinner" role="status" aria-label="Generating pairing code"></div>
+    <div class="msg" id="msg" role="status" aria-live="polite"></div>
+
+    <div class="code-box" id="codeBox">
+      <div class="code-heading">
+        <div class="code-label">Your pairing code</div>
+        <span class="copy-hint">Select to copy</span>
+      </div>
+      <button type="button" class="code-value" id="codeValue" onclick="copyCode()" aria-label="Copy pairing code to clipboard"></button>
+    </div>
+
+    <div class="steps" id="steps">
+      <b>Finish in WhatsApp</b>
+      <ol>
+        <li>Open WhatsApp on your phone.</li>
+        <li>Go to <b>Settings → Linked Devices</b>.</li>
+        <li>Tap <b>Link a Device</b>, then enter the code above.</li>
+        <li>Keep this page open while the bot connects.</li>
+      </ol>
+    </div>
+
+    <div class="control-panel" id="controlPanel">
+      <div class="control-head">
+        <div class="code-label">Bot controls</div>
+        <span class="control-state" id="ctrlState">—</span>
+      </div>
+      <div class="control-grid">
+        <button type="button" class="ctrl-btn start" id="btnStart" onclick="botAction('start')" title="Start the bot">
+          <span class="ctrl-ico">▶</span> Start
+        </button>
+        <button type="button" class="ctrl-btn stop" id="btnStop" onclick="botAction('stop')" title="Stop the bot (keeps session)">
+          <span class="ctrl-ico">■</span> Stop
+        </button>
+        <button type="button" class="ctrl-btn connect" id="btnConnect" onclick="botAction('connect')" title="Reconnect / connect with saved session">
+          <span class="ctrl-ico">↻</span> Connect
+        </button>
+        <button type="button" class="ctrl-btn logout" id="btnLogout" onclick="botAction('logout')" title="Unlink WhatsApp account and clear session">
+          <span class="ctrl-ico">⎋</span> Logout
+        </button>
+        <button type="button" class="ctrl-btn newbot" id="btnNewBot" onclick="botAction('reset')" title="New bot — wipe session and wait for a number">
+          <span class="ctrl-ico">✦</span> New Bot
+        </button>
+      </div>
+      <p class="control-note">Logout or New Bot clears this app’s saved login. No pair code is created automatically; enter the number you want to connect and generate a code. Your WhatsApp chats are not deleted.</p>
+    </div>
+
+    <footer class="workspace-footer">
+      <span>RDX BOT MD <span aria-hidden="true">/</span> PAIR CONSOLE</span>
+      <span class="footer-ready">Pairing console</span>
+    </footer>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function show(msg, type) {
+  const el = $('msg');
+  el.className = 'msg ' + type;
+  el.textContent = msg;
+  if (type === 'success') setTimeout(() => { el.className = 'msg'; }, 6000);
+}
+
+async function checkStatus() {
+  try {
+    const r = await fetch('/status');
+    const d = await r.json();
+    const badge = $('statusBadge');
+    updateControls(d);
+    if (!d.pairCode) {
+      $('codeBox').classList.remove('show');
+      $('codeValue').textContent = '';
+      $('steps').style.display = 'none';
+    }
+    if (d.pairingRequired) {
+      badge.textContent = 'Session expired — click New Bot to pair again';
+      badge.className = 'status-badge';
+      $('genBtn').disabled = true;
+      $('genBtn').textContent = 'Reset Session First';
+    } else if (d.connected || d.registered) {
+      badge.textContent = d.stopped ? 'Bot stopped — session saved' : 'Bot is connected';
+      badge.className = 'status-badge' + (d.stopped ? '' : ' connected');
+      if (!d.stopped) {
+        $('genBtn').disabled = true;
+        $('genBtn').textContent = 'Bot Already Connected';
+      } else {
+        $('genBtn').disabled = false;
+        $('genBtn').textContent = 'Generate Pair Code';
+      }
+    } else {
+      badge.textContent = d.stopped
+        ? 'Bot is stopped'
+        : (d.socketOpen ? 'Ready for pairing' : 'Connecting to WhatsApp');
+      badge.className = 'status-badge';
+      $('genBtn').disabled = false;
+      // Auto-show pairing code if bot already generated one (from settings.ownerNumber)
+      if (d.pairCode && !$('codeBox').classList.contains('show')) {
+        $('codeValue').textContent = d.pairCode;
+        $('codeBox').classList.add('show');
+        $('steps').style.display = 'block';
+        show('Auto pairing code ready — enter it in WhatsApp now.', 'success');
+      }
+      // Prefill number if bot knows it
+      if (d.pairNumber && !$('number').value) {
+        const n = String(d.pairNumber);
+        // keep last 10-ish digits in the number field if cc field is filled
+        if ($('cc').value && n.startsWith($('cc').value)) {
+          $('number').value = n.slice($('cc').value.length);
+        }
+      }
+    }
+  } catch (e) {
+    $('statusBadge').textContent = 'Server not reachable';
+    setCtrlState('Offline', 'stopped');
+  }
+}
+
+async function getCode() {
+  const cc = $('cc').value.replace(/[^0-9]/g, '');
+  const num = $('number').value.replace(/[^0-9]/g, '');
+  const full = cc + num;
+  const prefix = ($('prefix').value || '.').trim().slice(0, 3);
+  const owner = $('ownerNumber').value.replace(/[^0-9]/g, '');
+
+  if (full.length < 8) {
+    show('Please enter a valid WhatsApp number with country code.', 'error');
+    return;
+  }
+
+  $('genBtn').disabled = true;
+  $('spinner').classList.add('show');
+  $('msg').className = 'msg';
+  $('codeBox').classList.remove('show');
+  $('steps').style.display = 'none';
+
+  try {
+    const r = await fetch('/code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number: full, prefix, owner })
+    });
+    const d = await r.json();
+
+    if (d.success && d.code) {
+      $('codeValue').textContent = d.code;
+      $('codeBox').classList.add('show');
+      $('steps').style.display = 'block';
+      show('Pair code generated. Enter it in WhatsApp to connect.', 'success');
+      $('genBtn').textContent = 'Code Generated';
+      setTimeout(() => {
+        $('genBtn').disabled = false;
+        $('genBtn').innerHTML = '<svg class="button-crosshair" aria-hidden="true" viewBox="0 0 18 18" fill="none"><path d="M9 1.5v4m0 7v4m7.5-7.5h-4m-7 0h-4M13.7 4.3l-2.8 2.8m-3.8 3.8-2.8 2.8m9.4 0-2.8-2.8m-3.8-3.8L4.3 4.3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><circle cx="9" cy="9" r="2.2" stroke="currentColor" stroke-width="1.25"/></svg>Generate Pair Code';
+      }, 8000);
+      pollConnected();
+    } else {
+      show(d.error || 'Failed to generate code. Try again.', 'error');
+      $('genBtn').disabled = false;
+      $('genBtn').innerHTML = '<svg class="button-crosshair" aria-hidden="true" viewBox="0 0 18 18" fill="none"><path d="M9 1.5v4m0 7v4m7.5-7.5h-4m-7 0h-4M13.7 4.3l-2.8 2.8m-3.8 3.8-2.8 2.8m9.4 0-2.8-2.8m-3.8-3.8L4.3 4.3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><circle cx="9" cy="9" r="2.2" stroke="currentColor" stroke-width="1.25"/></svg>Generate Pair Code';
+    }
+  } catch (e) {
+    show('Network error. Is the server running?', 'error');
+    $('genBtn').disabled = false;
+    $('genBtn').innerHTML = '<svg class="button-crosshair" aria-hidden="true" viewBox="0 0 18 18" fill="none"><path d="M9 1.5v4m0 7v4m7.5-7.5h-4m-7 0h-4M13.7 4.3l-2.8 2.8m-3.8 3.8-2.8 2.8m9.4 0-2.8-2.8m-3.8-3.8L4.3 4.3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><circle cx="9" cy="9" r="2.2" stroke="currentColor" stroke-width="1.25"/></svg>Generate Pair Code';
+  } finally {
+    $('spinner').classList.remove('show');
+  }
+}
+
+function copyCode() {
+  const code = $('codeValue').textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(code);
+  show('Code copied.', 'success');
+}
+
+let ctrlBusy = false;
+
+function setCtrlState(label, cls) {
+  const el = $('ctrlState');
+  el.textContent = label;
+  el.className = 'control-state' + (cls ? ' ' + cls : '');
+}
+
+function setCtrlButtons(enabled) {
+  ['btnStart', 'btnStop', 'btnConnect', 'btnLogout', 'btnNewBot'].forEach(id => {
+    const b = $(id);
+    if (b) b.disabled = !enabled;
+  });
+}
+
+async function botAction(action) {
+  if (ctrlBusy) return;
+  const labels = {
+    start: 'Starting bot…',
+    stop: 'Stopping bot…',
+    connect: 'Connecting…',
+    logout: 'Logging out & clearing session…',
+    reset: 'Resetting — new pairing…'
+  };
+  const done = {
+    start: 'Start requested',
+    stop: 'Bot stopped',
+    connect: 'Connect requested',
+    logout: 'Logged out — enter the number you want to connect',
+    reset: 'Reset done — enter the number you want to connect'
+  };
+  ctrlBusy = true;
+  setCtrlButtons(false);
+  setCtrlState(labels[action] || 'Working…', 'busy');
+  show(labels[action] || 'Working…', 'success');
+  try {
+    const r = await fetch('/control', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action })
+    });
+    const d = await r.json();
+    if (d.success) {
+      show(done[action] || 'Done', 'success');
+      // After logout/reset the pair code is gone — hide code box
+      if (action === 'logout' || action === 'reset') {
+        $('codeBox').classList.remove('show');
+        $('steps').style.display = 'none';
+      }
+      // Refresh status shortly after
+      setTimeout(checkStatus, 1200);
+      setTimeout(checkStatus, 4000);
+    } else {
+      show(d.error || 'Action failed', 'error');
+      setCtrlState('Error', 'stopped');
+    }
+  } catch (e) {
+    show('Network error — is the server running?', 'error');
+    setCtrlState('Error', 'stopped');
+  } finally {
+    ctrlBusy = false;
+    setCtrlButtons(true);
+  }
+}
+
+function updateControls(d) {
+  if (d.pairingRequired) {
+    setCtrlState('Pairing required', 'stopped');
+  } else if (d.connected || d.registered) {
+    if (d.stopped) setCtrlState('Stopped', 'stopped');
+    else setCtrlState('Running', 'running');
+  } else if (d.stopped) {
+    setCtrlState('Stopped', 'stopped');
+  } else if (d.hasSession) {
+    setCtrlState('Connecting', 'busy');
+  } else {
+    setCtrlState('Not paired', 'stopped');
+  }
+}
+
+function pollConnected() {
+  const t = setInterval(async () => {
+    try {
+      const r = await fetch('/status');
+      const d = await r.json();
+      updateControls(d);
+      if (d.connected || d.registered) {
+        clearInterval(t);
+        const badge = $('statusBadge');
+        badge.textContent = 'Bot connected successfully';
+        badge.className = 'status-badge connected';
+        show('Bot connected. You can close this page.', 'success');
+        $('codeBox').classList.remove('show');
+        $('steps').style.display = 'none';
+      }
+    } catch (e) {}
+  }, 4000);
+}
+
+checkStatus();
+setInterval(checkStatus, 15000);
+</script>
+</body>
+</html>
